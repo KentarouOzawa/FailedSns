@@ -1,0 +1,6 @@
+framework module Pods_failedSns {
+  umbrella header "Pods-failedSns-umbrella.h"
+
+  export *
+  module * { export * }
+}

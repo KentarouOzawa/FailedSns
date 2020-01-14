@@ -1,0 +1,58 @@
+//
+//  LoginViewController.swift
+//  failedSns
+//
+//  Created by 小澤謙太郎 on 2019/12/23.
+//  Copyright © 2019 小澤謙太郎. All rights reserved.
+//
+
+import UIKit
+import Firebase
+
+class LoginViewController: UIViewController,UITextFieldDelegate {
+
+    @IBOutlet weak var nameTextfield: UITextField!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        nameTextfield.delegate = self
+        // Do any additional setup after loading the view.
+    }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.navigationController?.navigationBar.isHidden = true
+    }
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        nameTextfield.resignFirstResponder()
+    }
+    
+    @IBAction func loginButton(_ sender: Any) {
+        if nameTextfield.text?.isEmpty != true{
+            //名前テキストの文字が入っていたら
+            UserDefaults.standard.set(nameTextfield.text, forKey: "userName")
+            Auth.auth().signInAnonymously { (result, error) in
+                if error == nil{
+                    self.performSegue(withIdentifier: "profileEdit", sender: nil)
+                }else{
+                    print(error?.localizedDescription as Any)
+                }
+            }
+        }else{
+            //名前テキストの文字が空だったら
+            let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.error)
+        }
+    }
+    
+    /*
+    // MARK: - Navigation
+
+    // In a storyboard-based application, you will often want to do a little preparation before navigation
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        // Get the new view controller using segue.destination.
+        // Pass the selected object to the new view controller.
+    }
+    */
+
+}
