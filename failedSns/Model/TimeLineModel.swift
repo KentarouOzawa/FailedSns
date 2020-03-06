@@ -8,35 +8,49 @@
 
 import Foundation
 import Firebase
+import FirebaseFirestore
 
 class TimeLineModel {
     var text:String = ""
     var imageString:String = ""
     var profileImageString:String = ""
     var userName:String = ""
-    let ref:DatabaseReference!
+    var ref: DocumentReference? = nil
+    var db = Firestore.firestore()
+    
     
     init(text:String,imageString:String,profileImageString:String,userName:String) {
         self.text = text
         self.imageString = imageString
         self.profileImageString = profileImageString
         self.userName = userName
-        ref = Database.database().reference().child("timeline").childByAutoId()
+        db = Firestore.firestore()
     }
-    init(snapshop:DataSnapshot) {
-        ref = snapshop.ref
-        if let value = snapshop.value as? [String:Any]{
+    
+    init(snapshot: DocumentSnapshot) {
+        ref = snapshot.reference
+        if let value = snapshot.data(){
             text = value["text"] as! String
             imageString = value["imageString"] as! String
             profileImageString = value["profileImageString"] as! String
             userName = value["userName"] as! String
         }
     }
+    
     func toContents()->[String:Any]{
         return
-            ["text":text,"imageString":imageString,"profileImageString":profileImageString,"userName":userName]
-        }
+            ["text":text,"imageString":imageString,"profileImageString":profileImageString,"userName":userName, "timestamp": NSDate()]
+    }
+    
     func save(){
-        ref.setValue(toContents())
+       ref = db.collection("timeline").addDocument(data: toContents()){ err in
+            if let err = err {
+                print("Error adding document: \(err)")
+            } else {
+                print("Document added with ID: \(self.ref!.documentID)")
+            }
+        }
     }
 }
+
+

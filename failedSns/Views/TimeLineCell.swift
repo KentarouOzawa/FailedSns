@@ -11,18 +11,21 @@ import Firebase
 import PINRemoteImage
 
 class TimeLineCell: UITableViewCell {
-
+    
     @IBOutlet weak var contentsImageView: UIImageView!
     @IBOutlet weak var profileImageView: UIImageView!
     @IBOutlet weak var userNameLabel: UILabel!
-    @IBOutlet weak var commentLabel: UILabel!
-     var timeLineModel:TimeLineModel! {
+    @IBOutlet weak var commentTextView: UITextView!
+    var timeLineModel:TimeLineModel! {
         didSet{
-            commentLabel.text = timeLineModel.text
+            commentTextView.isEditable = false
+            commentTextView.text = timeLineModel.text
             userNameLabel.text = timeLineModel.userName
             profileImageView.pin_setImage(from: URL(string:timeLineModel.profileImageString)!)
             contentsImageView.pin_setImage(from: URL(string:timeLineModel.imageString)!)
-           }
+            func setup(comment: String) {
+                commentTextView.text = comment
+            }
+        }
     }
-   
 }

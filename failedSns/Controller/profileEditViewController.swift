@@ -8,13 +8,16 @@
 
 import UIKit
 import Photos
-import Firebase
+import FirebaseFirestore
 import PKHUD
+import Firebase
+
 class profileEditViewController: UIViewController,UIImagePickerControllerDelegate,UINavigationControllerDelegate{
     
     @IBOutlet weak var profileImage: UIImageView!
     
     var imageUrl:URL?
+    var db:Firestore!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -41,34 +44,32 @@ class profileEditViewController: UIViewController,UIImagePickerControllerDelegat
         /*storage
          gs://failedsns.appspot.com
          */
-        let ref = Database.database().reference(fromURL: "https://failedsns.firebaseio.com/")
-        let storage = Storage.storage().reference(forURL: "gs://failedsns.appspot.com")
-        //画像が入るフォルダを作成してそこに画像を入れる
-        //画像の名前も決めます
-        let key = ref.childByAutoId().key
-        let imageRef = storage.child("profileImages").child("\(key).jpeg")
-        var imageData:Data = Data()
-        if self.profileImage.image != nil{
-            imageData = (self.profileImage.image?.jpegData(compressionQuality: 0.01))!
-        }
-        //HUD
-        HUD.dimsBackground = false
-        HUD.show(.progress)
-        let uploadTask = imageRef.putData(imageData, metadata: nil) { (metaData, error) in
-            if error != nil{
-                print(error as Any)
-                return
-            }
-            imageRef.downloadURL { (url, error) in
-                if url != nil{
-                    //HUD
-                    HUD.hide()
-                    self.imageUrl = url
-                    UserDefaults.standard.set(self.imageUrl?.absoluteString, forKey: "profileImageString")
+        //let ref = Database.database().reference(fromURL: "https://failedsns.firebaseio.com/")
+        // インスタンスの生成
+        let storage = Storage.storage()
+        let storageReference = storage.reference(forURL: "gs://failedsns.appspot.com")
+        // イメージの名前を日付から自動生成
+        let imageName = "\(Date().timeIntervalSince1970).jpg"
+        // 保存する階層を設定
+        let imagesReference = storageReference.child("users").child("user").child(imageName)
+        // 保存するイメージデータを宣言
+        let image = profileImage.image!
+        if let imageData = image.jpegData(compressionQuality: 0.8) {
+            let metadata = StorageMetadata()
+            metadata.contentType = "image/jpeg"
+            // putDataで実際にstorageに保存を行う
+            imagesReference.putData(imageData, metadata: metadata, completion:{(metadata, error) in
+                if let _ = metadata {
+                    imagesReference.downloadURL{(url,error) in
+                        if let downloadUrl = url {
+                            // ここでstorageのURLの保存先を設定
+                            self.imageUrl = downloadUrl
+                            UserDefaults.standard.set(self.imageUrl?.absoluteString, forKey: "profileImageString")
+                        }
+                    }
                 }
-            }
+            })
         }
-        uploadTask.resume()
     }
     
     func openAction(){
@@ -123,7 +124,6 @@ class profileEditViewController: UIViewController,UIImagePickerControllerDelegat
     }
     @IBAction func tapProfileImageView(_ sender: Any) {
         openAction()
-        
     }
     
     @IBAction func editDecided(_ sender: Any) {
@@ -131,7 +131,8 @@ class profileEditViewController: UIViewController,UIImagePickerControllerDelegat
             DispatchQueue.main.async {
                 self.sendGetImageUrl()
             }
-             performSegue(withIdentifier: "timeLine", sender: nil)
+            performSegue(withIdentifier: "timeLine", sender: nil)
         }
     }
 }
+

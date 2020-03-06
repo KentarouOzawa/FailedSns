@@ -13,12 +13,15 @@ class DetailViewController: UIViewController {
    @IBOutlet weak var userNameLabel: UILabel!
    @IBOutlet weak var contentImageView: UIImageView!
    @IBOutlet weak var commentTextView: UITextView!
+    
     var profileImage = String()
     var userName = String()
     var contentImage = String()
     var comment = String()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        commentTextView.isEditable = false
         userNameLabel.text = userName
         commentTextView.text = comment
         profileImageview.pin_setImage(from: URL(string:profileImage)!)

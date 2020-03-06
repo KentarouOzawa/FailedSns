@@ -10,11 +10,14 @@ import UIKit
 import Firebase
 import PKHUD
 import CDAlertView
+import FirebaseFirestore
 
 class PostViewController: UIViewController,UIImagePickerControllerDelegate,UINavigationControllerDelegate {
     @IBOutlet weak var postBarButtonItem: UIBarButtonItem!
     @IBOutlet weak var commentTextView: UITextView!
     @IBOutlet weak var contentImageView: UIImageView!
+    
+    var db:Firestore!
     var imageURL:URL?
     var profileImageString = ""
     var userName = ""
@@ -25,6 +28,7 @@ class PostViewController: UIViewController,UIImagePickerControllerDelegate,UINav
         title = " TUMADUKI"
         commentTextView.text = ""
         commentTextView.becomeFirstResponder()
+        db = Firestore.firestore()
     }
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -82,34 +86,38 @@ class PostViewController: UIViewController,UIImagePickerControllerDelegate,UINav
         /*storage
          gs://failedsns.appspot.com
          */
-        let ref = Database.database().reference(fromURL: "https://failedsns.firebaseio.com/")
-        let storage = Storage.storage().reference(forURL: "gs://failedsns.appspot.com")
-        //画像が入るフォルダを作成してそこに画像を入れる
-        //画像の名前も決めます
-        let key = ref.childByAutoId().key
-        let imageRef = storage.child("ImageContents").child("\(key).jpeg")
-        var imageData:Data = Data()
-        if self.contentImageView.image != nil{
-            imageData = (self.contentImageView.image?.jpegData(compressionQuality: 0.01))!
-        }
-        //HUD
-        HUD.dimsBackground = false
-        HUD.show(.progress)
-        let uploadTask = imageRef.putData(imageData, metadata: nil) { (metaData, error) in
-            if error != nil{
-                print(error as Any)
-                return
-            }
-            imageRef.downloadURL { (url, error) in
-                if url != nil{
-                    //HUD
-                    HUD.hide()
-                    self.imageURL = url
-                    self.postBarButtonItem.isEnabled = true
+        
+        // let ref = Database.database().reference(fromURL: "https://failedsns.firebaseio.com/")
+        let storage = Storage.storage()
+        let storageReference = storage.reference(forURL: "gs://failedsns.appspot.com")
+        // イメージの名前を日付から自動生成
+        let imageName = "\(Date().timeIntervalSince1970).jpg"
+        // 保存する階層を設定
+        let imagesReference = storageReference.child("users").child("user").child(imageName)
+        // 保存するイメージデータを宣言
+        let image = contentImageView.image!
+        if let imageData = image.jpegData(compressionQuality: 0.8) {
+            let metadata = StorageMetadata()
+            metadata.contentType = "image/jpeg"
+            //HUD
+            HUD.dimsBackground = false
+            HUD.show(.progress)
+            // putDataで実際にstorageに保存を行う
+            imagesReference.putData(imageData, metadata: metadata, completion:{(metadata, error) in
+                if let _ = metadata {
+                    imagesReference.downloadURL{(url,error) in
+                        if let downloadUrl = url {
+                            //HUD
+                            HUD.hide()
+                            // ここでstorageのURLの保存先を設定
+                            self.imageURL = downloadUrl
+                            self.postBarButtonItem.isEnabled = true
+                        }
+                    }
                 }
             }
+            )
         }
-        uploadTask.resume()
     }
     //カメラなどが立ち上がってる時にキャンセルされたら
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
@@ -123,7 +131,7 @@ class PostViewController: UIViewController,UIImagePickerControllerDelegate,UINav
             picker.dismiss(animated: true, completion: nil)
         }
     }
-
+    
     @IBAction func tapProfileImagView(_ sender: Any) {
         openAction()
     }

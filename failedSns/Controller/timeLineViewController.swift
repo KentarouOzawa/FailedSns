@@ -10,7 +10,7 @@ import UIKit
 import Firebase
 
 class timeLineViewController: UIViewController,UITableViewDataSource,UITableViewDelegate {
-    var timeLineRef = Database.database().reference().child("timeline")
+    var timeLineRef = Firestore.firestore().collection("timeline")
     var timeLines = [TimeLineModel]()
     var profileImageString = ""
     var userName = ""
@@ -22,41 +22,44 @@ class timeLineViewController: UIViewController,UITableViewDataSource,UITableView
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        tableView.addSubview(refleshControll)
-        
+        //タイムラインscrollの更新
         refleshControll.addTarget(self, action: #selector(reflesh), for: .valueChanged)
-        
         refleshControll.attributedTitle = NSAttributedString(string: "引っ張って更新")
         refleshControll.addTarget(self, action: #selector(reflesh), for: .valueChanged)
         tableView.addSubview(refleshControll)
+        
         //しっかりとスクロールして更新する
         self.tableView.alwaysBounceVertical = true
+        //navigationのUI
         self.navigationController?.navigationBar.isHidden = false
         self.navigationItem.hidesBackButton = true
-        title = "TUMADUKI"
-        self.tableView.allowsSelection = true
         self.navigationController?.navigationBar.tintColor = .white
+        title = "TUMADUKI"
+        
+        self.tableView.allowsSelection = true
         tableView.delegate = self
         tableView.dataSource = self
         // Do any additional setup after loading the view.
     }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
-        //コンテンツを受信します
-        timeLineRef.observe(.value) { (snapshot) in
-             print(snapshot)
+        timeLineRef.order(by: "timestamp", descending: false).getDocuments{ (snapshots, error) in
             self.timeLines.removeAll()
-            for child in snapshot.children{
-                let childSnapshot = child as! DataSnapshot
-                let timeline = TimeLineModel(snapshop: childSnapshot)
+            // ここに通信後の処理を書く。
+            // snapshot.documentsで全てのドキュメントが取得できる。
+            // document.data()でドキュメントのデータが取得可能
+            for document in snapshots!.documents {
+                let data = document as DocumentSnapshot 
+                let timeline = TimeLineModel(snapshot: data)
                 print(timeline)
                 self.timeLines.insert(timeline, at: 0)
+                
             }
             self.tableView.reloadData()
         }
-       
     }
+    
     @objc func reflesh(){
         refleshControll.endRefreshing()
     }
@@ -77,6 +80,7 @@ class timeLineViewController: UIViewController,UITableViewDataSource,UITableView
         cell.timeLineModel = timeLineModel
         return cell
     }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         profileImageString = timeLines[indexPath.row].profileImageString
         userName = timeLines[indexPath.row].userName
@@ -84,6 +88,7 @@ class timeLineViewController: UIViewController,UITableViewDataSource,UITableView
         text = timeLines[indexPath.row].text
         performSegue(withIdentifier: "detailView", sender: nil)
     }
+    
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "detailView"{
             let detailViewController = segue.destination as! DetailViewController

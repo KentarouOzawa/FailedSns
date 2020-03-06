@@ -17,12 +17,11 @@ target 'failedSns' do
     # Pods for testing
   end
 pod 'CDAlertView'
-pod 'Firebase'
 pod 'Firebase/Auth'
-pod 'Firebase/Database'
 pod 'Firebase/Storage'
 pod 'PINRemoteImage' 
 pod 'PKHUD', '~> 5.0'
-
+pod 'Firebase/Core'
+pod 'Firebase/Firestore'
 
 end
